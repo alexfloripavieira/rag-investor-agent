@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  rag-app:
+    build: .
+    container_name: rag-investor-app
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./reports_new:/app/reports_new
+      - ./reports_processed:/app/reports_processed
+      - ./vector_store:/app/vector_store
+    env_file:
+      - .env

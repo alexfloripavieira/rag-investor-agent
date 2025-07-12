@@ -1,0 +1,15 @@
+streamlit
+python-dotenv
+langchain
+langchain-openai
+langchain-chroma
+pypdf
+tiktoken
+openai
+langchain-community
+langchain-core
+langchain-google-genai
+langsmith
+httpx
+pydub
+duckduckgo-search

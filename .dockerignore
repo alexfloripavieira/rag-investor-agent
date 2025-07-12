@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Ambiente virtual
+venv/
+.venv/
+
+# Arquivos de ambiente
+.env
+
+# Metadados do Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Outros
+.git
+.vscode/
