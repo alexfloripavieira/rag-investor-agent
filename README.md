@@ -128,4 +128,4 @@ Este projeto está licenciado sob a licença MIT. Veja o arquivo `LICENSE` para 
 
 ## 📧 Contato
 
-Para dúvidas ou sugestões, entre em contato com [Seu Nome/Email/GitHub Profile].
+Para dúvidas ou sugestões, entre em contato com alexfloripavieira.
