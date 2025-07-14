@@ -24,6 +24,7 @@ index.faiss
 reports_processed/
 rag_files/
 vector_store/
+reports_new/
 
 # OS generated files
 .DS_Store

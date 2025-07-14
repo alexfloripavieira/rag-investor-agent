@@ -1,21 +1,28 @@
+"""Módulo de Configuração
+
+Centraliza as constantes e configurações do projeto.
+"""
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# --- Diretórios ---
+# Usamos os nomes de diretório diretamente, pois o Docker Compose os monta no mesmo caminho
+REPORTS_NEW_DIR = "reports_new"
+REPORTS_PROCESSED_DIR = "reports_processed"
+VECTOR_STORE_DIR = "vector_store_chroma"
 
-REPORTS_PROCESSED_DIR = os.getenv("REPORTS_PROCESSED_DIR")
-TTS_VOICE = os.getenv("TTS_VOICE")
-AI_CONTEXTUALIZE_PROMPT = os.getenv("AI_CONTEXTUALIZE_PROMPT")
-AI_SYSTEM_PROMPT=os.getenv("AI_SYSTEM_PROMPT")
-BUFFER_KEY_SUFIX = os.getenv("BUFFER_KEY_SUFIX")
-BUFFER_TTL = os.getenv("BUFFER_TTL")
-DEBOUNCE_SECONDS = os.getenv("DEBOUNCE_SECONDS")
-EVOLUTION_API_URL = os.getenv("EVOLUTION_API_URL")
-EVOLUTION_AUTHENTICATION_API_KEY = os.getenv("AUTHENTICATION_API_KEY")
-EVOLUTION_INSTANCE_NAME = os.getenv("EVOLUTION_INSTANCE_NAME")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL_NAME = os.getenv("OPENAI_MODEL_NAME")
-OPENAI_MODEL_TEMPERATURE = os.getenv("OPENAI_MODEL_TEMPERATURE")
-RAG_FILES_DIR = os.getenv("RAG_FILES_DIR")
-REDIS_URL = os.getenv("CACHE_REDIS_URI")
-VECTOR_STORE_PATH = os.getenv("VECTOR_STORE_PATH")
+# --- Modelos de IA ---
+LLM_MODEL_NAME = "gpt-4o-mini"
+EMBEDDING_MODEL_NAME = "text-embedding-3-small"
+
+# --- Configurações de Áudio ---
+TTS_VOICE = "onyx"  # Voz masculina aveludada da OpenAI
+
+# --- Nomes de Coleção do ChromaDB ---
+CHROMA_COLLECTION_NAME = "investment_reports"
+
+# --- Funções de Inicialização ---
+def ensure_directories_exist():
+    """Garante que todos os diretórios necessários existam ao iniciar a aplicação."""
+    for dir_path in [REPORTS_NEW_DIR, REPORTS_PROCESSED_DIR, VECTOR_STORE_DIR]:
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
