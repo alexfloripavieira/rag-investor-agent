@@ -1,37 +1,40 @@
-
 """Módulo de Serviços de LLM
 
 Encapsula interações com a API da OpenAI: Agente, Resumo e TTS.
 """
-from io import BytesIO
-from openai import OpenAI
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI
-from langchain.agents import Tool, initialize_agent, AgentType
-from langchain_community.tools import DuckDuckGoSearchRun
-from langchain.memory import ConversationBufferMemory
 
-from config import LLM_MODEL_NAME, TTS_VOICE
+from io import BytesIO
+
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.prompts import PromptTemplate
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_openai import ChatOpenAI
+from openai import OpenAI
+
+from config import OPENAI_MODEL_NAME, OPENAI_MODEL_TEMPERATURE, TTS_VOICE
+from memory import get_session_history
+from prompts import contextualize_prompt, qa_prompt
+from vector_store import VectorStoreManager
 
 # Cliente OpenAI para TTS
 client = OpenAI()
 
+
 def get_summarizer_chain():
     """Cria e retorna uma cadeia para resumir textos."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0.2)
+    llm = ChatOpenAI(model_name=OPENAI_MODEL_NAME, temperature=OPENAI_MODEL_TEMPERATURE)
     prompt = PromptTemplate.from_template(
         "Faça um resumo conciso e bem estruturado em português do seguinte texto:\n\n{text_to_summarize}\n\nRESUMO:"
     )
     return prompt | llm
 
+
 def text_to_speech(text):
     """Converte texto para áudio usando a API da OpenAI."""
     try:
         response = client.audio.speech.create(
-            model="tts-1",
-            voice=TTS_VOICE,
-            input=text
+            model="tts-1", voice=TTS_VOICE, input=text
         )
         audio_fp = BytesIO(response.content)
         return audio_fp
@@ -39,39 +42,23 @@ def text_to_speech(text):
         print(f"Erro na API de TTS: {e}")
         return None
 
-def setup_agent(retriever):
-    """Inicializa e retorna o agente com suas ferramentas e memória."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0)
-    
-    # Ferramenta RAG que usa o retriever do ChromaDB
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm, 
-        chain_type="stuff", 
-        retriever=retriever
-    )
-    # Usar invoke para a cadeia RAG
-    def run_qa_chain_with_invoke(question):
-        return qa_chain.invoke({"query": question})["result"]
 
-    report_analyzer_tool = Tool(
-        name="Analisador de Relatórios Financeiros",
-        func=run_qa_chain_with_invoke,
-        description="Use esta ferramenta para responder perguntas sobre o conteúdo de relatórios financeiros, fundos de investimento e análises de ações que foram carregados na aplicação. Sempre use esta ferramenta para perguntas sobre os relatórios. Forneça a pergunta completa como entrada."
+def get_rag_chain():
+    llm = ChatOpenAI(model=OPENAI_MODEL_NAME, temperature=OPENAI_MODEL_TEMPERATURE)
+    retriever = VectorStoreManager.add_documents_from_file().as_retriever()
+    history_aware_chain = create_history_aware_retriever(
+        llm, retriever, contextualize_prompt
     )
-    
-    # Ferramenta de busca na web
-    web_search_tool = DuckDuckGoSearchRun()
-    
-    tools = [report_analyzer_tool, web_search_tool]
-    
-    # Configura a memória para o agente
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
+    question_answer_chain = create_stuff_documents_chain(llm=llm, prompt=qa_prompt)
+    return create_retrieval_chain(history_aware_chain, question_answer_chain)
 
-    return initialize_agent(
-        tools,
-        llm,
-        agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION, # Agente que suporta memória
-        verbose=True,
-        memory=memory,
-        handle_parsing_errors=True # Adicionado para tratamento de erros
+
+def get_conversational_rag_chain():
+    rag_chain = get_rag_chain()
+    return RunnableWithMessageHistory(
+        runnable=rag_chain,
+        get_session_history=get_session_history,
+        input_messages_key="input",
+        history_messages_key="chat_history",
+        output_messages_key="answer",
     )

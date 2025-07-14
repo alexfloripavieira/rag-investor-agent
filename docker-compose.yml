@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   rag-app:
     build: .
@@ -7,8 +5,23 @@ services:
     ports:
       - "8501:8501"
     volumes:
-      - ./reports_new:/app/reports_new
+      - ./rag_files:/app/rag_files
       - ./reports_processed:/app/reports_processed
       - ./vector_store:/app/vector_store
     env_file:
       - .env
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    command: >
+      redis-server --port 6379 --appendonly yes
+    volumes:
+      - redis:/data
+    ports:
+      - 6379:6379
+volumes:
+  redis:
+  rag_files:
+  reports_processed:
+  vector_store:
