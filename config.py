@@ -11,8 +11,18 @@ REPORTS_PROCESSED_DIR = "reports_processed"
 VECTOR_STORE_DIR = "vector_store_chroma"
 
 # --- Modelos de IA ---
-LLM_MODEL_NAME = "gpt-4o-mini"
+LLM_MODEL_NAME = "gpt-4o-mini"  # Modelo padrão
 EMBEDDING_MODEL_NAME = "text-embedding-3-small"
+
+# --- Opções de Modelos LLM Disponíveis ---
+AVAILABLE_LLM_MODELS = {
+    "gpt-4o-mini": "GPT-4o Mini (Rápido e econômico)",
+    "gpt-4o": "GPT-4o (Mais inteligente, mais caro)",
+    "gpt-4-turbo": "GPT-4 Turbo (Avançado)",
+    "gpt-3.5-turbo": "GPT-3.5 Turbo (Econômico)",
+    "gpt-4": "GPT-4 (Clássico)",
+    "gpt-5": "GPT-5 (Mais avançado e caro)"
+}
 
 # --- Configurações de Áudio ---
 TTS_VOICE = "onyx"  # Voz masculina aveludada da OpenAI

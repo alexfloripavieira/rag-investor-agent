@@ -24,17 +24,21 @@ def get_openai_client():
         client = OpenAI()
     return client
 
-def get_summarizer_chain():
+def get_summarizer_chain(model_name=None):
     """Cria e retorna uma cadeia para resumir textos."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0)
+    if model_name is None:
+        model_name = LLM_MODEL_NAME
+    llm = ChatOpenAI(model_name=model_name, temperature=0)
     prompt = PromptTemplate.from_template(
         "Faça um resumo conciso e bem estruturado em português do seguinte texto:\n\n{text_to_summarize}\n\nRESUMO:"
     )
     return prompt | llm
 
-def generate_insights_from_documents(retriever):
+def generate_insights_from_documents(retriever, model_name=None):
     """Gera insights automáticos dos documentos usando RAG."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0.3)
+    if model_name is None:
+        model_name = LLM_MODEL_NAME
+    llm = ChatOpenAI(model_name=model_name, temperature=0.3)
     
     # Queries para extrair insights específicos
     insight_queries = [
@@ -76,9 +80,11 @@ def generate_insights_from_documents(retriever):
     
     return insights
 
-def generate_market_summary(retriever):
+def generate_market_summary(retriever, model_name=None):
     """Gera um resumo executivo do mercado baseado nos documentos."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0.2)
+    if model_name is None:
+        model_name = LLM_MODEL_NAME
+    llm = ChatOpenAI(model_name=model_name, temperature=0.2)
     
     try:
         # Buscar documentos para análise geral
@@ -112,7 +118,7 @@ def generate_market_summary(retriever):
     except Exception as e:
         return f"Erro ao gerar resumo do mercado: {e}"
 
-def extract_key_metrics(retriever):
+def extract_key_metrics(retriever, model_name=None):
     """Extrai métricas chave dos relatórios."""
     try:
         # Buscar documentos com dados numéricos
@@ -121,7 +127,9 @@ def extract_key_metrics(retriever):
         if not docs:
             return {}
         
-        llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0)
+        if model_name is None:
+            model_name = LLM_MODEL_NAME
+        llm = ChatOpenAI(model_name=model_name, temperature=0)
         context = "\n\n".join([doc.page_content for doc in docs[:3]])
         
         prompt = f"""
@@ -189,9 +197,11 @@ def concatenate_audio_files(audio_contents_list):
         print(f"Erro ao concatenar áudios: {e}")
         return audio_contents_list[0] if audio_contents_list else None
 
-def setup_agent(retriever):
+def setup_agent(retriever, model_name=None):
     """Inicializa e retorna o agente com suas ferramentas e memória."""
-    llm = ChatOpenAI(model_name=LLM_MODEL_NAME, temperature=0)
+    if model_name is None:
+        model_name = LLM_MODEL_NAME
+    llm = ChatOpenAI(model_name=model_name, temperature=0)
     
     # Ferramenta RAG que usa o retriever do ChromaDB
     qa_chain = RetrievalQA.from_chain_type(

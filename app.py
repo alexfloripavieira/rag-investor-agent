@@ -151,6 +151,30 @@ def main():
     # --- Barra Lateral (Controles) ---
     with st.sidebar:
         st.header("Controles")
+        
+        # Seletor de Modelo LLM
+        st.subheader("🤖 Configuração do Modelo")
+        selected_model = st.selectbox(
+            "Escolha o modelo LLM:",
+            options=list(config.AVAILABLE_LLM_MODELS.keys()),
+            format_func=lambda x: config.AVAILABLE_LLM_MODELS[x],
+            index=0,  # GPT-4o-mini como padrão
+            help="Modelos mais avançados são mais inteligentes, mas consomem mais tokens."
+        )
+        
+        # Mostrar informações sobre o modelo selecionado
+        if selected_model == "gpt-5":
+            st.info("🎯 **Modelo Mais Avançado** - Máxima qualidade, maior custo")
+        elif selected_model in ["gpt-4o", "gpt-4-turbo", "gpt-4"]:
+            st.info("💰 **Modelo Premium** - Maior qualidade, maior custo")
+        elif selected_model == "gpt-3.5-turbo":
+            st.info("🚀 **Modelo Econômico** - Rápido e barato")
+        else:
+            st.info("⚡ **Modelo Balanceado** - Ótima relação qualidade/custo")
+        
+        # Armazenar o modelo selecionado no session state
+        st.session_state.selected_model = selected_model
+        
         st.subheader("1. Carregar Novos Relatórios")
         uploaded_files = st.file_uploader("Selecione arquivos PDF", accept_multiple_files=True, type="pdf")
         if uploaded_files:
@@ -271,7 +295,10 @@ def main():
     ])
 
     with tab_agent:
-        st.subheader("Converse com o Agente")
+        # Mostrar modelo ativo
+        selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
+        st.subheader("🗣️ Conversar com o Agente")
+        st.info(f"🤖 **Modelo ativo:** {config.AVAILABLE_LLM_MODELS.get(selected_model, selected_model)}")
         
         # Exibir mensagens anteriores do chat
         for message in st.session_state.messages:
@@ -285,7 +312,9 @@ def main():
                 st.markdown(user_question)
 
             with st.spinner("O Agente está pensando..."):
-                agent_executor = llm_services.setup_agent(vector_manager.get_retriever())
+                # Usar o modelo selecionado pelo usuário
+                selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
+                agent_executor = llm_services.setup_agent(vector_manager.get_retriever(), model_name=selected_model)
                 try:
                     # Usar invoke para compatibilidade com memória
                     response = agent_executor.invoke({"input": user_question})["output"]
@@ -496,7 +525,10 @@ def main():
             st.session_state.action = None
 
     with tab_insights:
+        # Mostrar modelo ativo
+        selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
         st.subheader("💡 Insights Automáticos dos Relatórios")
+        st.info(f"🤖 **Modelo ativo:** {config.AVAILABLE_LLM_MODELS.get(selected_model, selected_model)}")
         
         # Verificar se há documentos processados
         doc_count = vector_manager.count_documents()
@@ -533,7 +565,8 @@ def main():
             if action == "market_summary":
                 st.subheader("📋 Resumo Executivo do Mercado")
                 with st.spinner("Gerando resumo executivo..."):
-                    summary = llm_services.generate_market_summary(retriever)
+                    selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
+                    summary = llm_services.generate_market_summary(retriever, model_name=selected_model)
                     st.markdown(summary)
                     
                     # Botão para download
@@ -547,7 +580,8 @@ def main():
             elif action == "key_metrics":
                 st.subheader("📊 Métricas Chave Extraídas")
                 with st.spinner("Extraindo métricas dos relatórios..."):
-                    metrics = llm_services.extract_key_metrics(retriever)
+                    selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
+                    metrics = llm_services.extract_key_metrics(retriever, model_name=selected_model)
                     
                     if "error" in metrics:
                         st.error(metrics["error"])
@@ -566,7 +600,8 @@ def main():
             elif action == "detailed_insights":
                 st.subheader("🔍 Análise Detalhada dos Relatórios")
                 with st.spinner("Gerando insights detalhados... Isso pode levar alguns minutos."):
-                    insights = llm_services.generate_insights_from_documents(retriever)
+                    selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
+                    insights = llm_services.generate_insights_from_documents(retriever, model_name=selected_model)
                     
                     # Criar abas para diferentes insights
                     insight_tabs = st.tabs([
