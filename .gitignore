@@ -24,11 +24,13 @@ index.faiss
 
 # RAG Data - não incluir no Git
 reports_processed/
-rag_files/
 vector_store/
 vector_store_chroma/
 vector_store_*/
 *.sqlite3
+
+# Diretório obsoleto para remoção
+rag_files/
 
 # Reports
 reports_new/

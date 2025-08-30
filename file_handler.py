@@ -35,3 +35,34 @@ def get_full_pdf_text(file_path):
     """Extrai e retorna todo o texto de um único arquivo PDF."""
     loader = PyPDFLoader(file_path)
     return "\n".join([doc.page_content for doc in loader.load()])
+
+def clean_redundant_directories():
+    """Remove duplicatas e organiza arquivos corretamente."""
+    print("🧹 Limpando redundâncias nos diretórios...")
+    
+    # Se arquivo já foi processado (está no ChromaDB), remover de reports_new
+    # Isto será usado quando rebuild do Docker resolver as permissões
+    processed_files = get_all_processed_reports()
+    
+    if os.path.exists(REPORTS_NEW_DIR):
+        new_files = [f for f in os.listdir(REPORTS_NEW_DIR) if f.endswith('.pdf')]
+        for file_name in new_files:
+            if file_name in processed_files:
+                try:
+                    old_path = os.path.join(REPORTS_NEW_DIR, file_name)
+                    os.remove(old_path)
+                    print(f"🗑️ Removido duplicata: {file_name} (já processado)")
+                except Exception as e:
+                    print(f"⚠️ Não foi possível remover {file_name}: {e}")
+    
+    # Remover rag_files se existir
+    rag_files_dir = "rag_files"
+    if os.path.exists(rag_files_dir):
+        try:
+            import shutil
+            shutil.rmtree(rag_files_dir)
+            print("🗑️ Diretório rag_files removido (obsoleto)")
+        except Exception as e:
+            print(f"⚠️ Não foi possível remover rag_files: {e}")
+    
+    print("✅ Limpeza concluída")
