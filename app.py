@@ -148,17 +148,40 @@ def main():
                     st.text_area("Resumo", summary, height=600)
 
             elif action_type in ['listen_summary', 'listen_full']:
-                text_to_convert = ""
-                spinner_msg = ""
+                # Extrair nome do arquivo a partir do caminho
+                file_name = os.path.basename(file_path)
+                
                 if action_type == 'listen_summary':
-                    spinner_msg = "Gerando resumo e áudio..."
-                    with st.spinner(spinner_msg):
+                    with st.spinner("Gerando resumo e áudio..."):
+                        # Gerar resumo
                         full_text = file_handler.get_full_pdf_text(file_path)
                         summarizer = llm_services.get_summarizer_chain()
-                        text_to_convert = summarizer.invoke({"text_to_summarize": full_text}).content
+                        summary_text = summarizer.invoke({"text_to_summarize": full_text}).content
+                        
+                        # Mostrar resumo
+                        st.subheader("📝 Resumo do Relatório")
+                        st.text_area("Resumo", summary_text, height=300)
+                        
+                        # Converter resumo para áudio
+                        with st.spinner("Convertendo resumo para áudio..."):
+                            audio_content = llm_services.text_to_speech(summary_text)
+                            
+                            if audio_content:
+                                st.subheader("🎧 Áudio do Resumo")
+                                st.audio(audio_content, format='audio/mp3')
+                                
+                                # Botão de download do áudio
+                                st.download_button(
+                                    label="📥 Baixar Áudio do Resumo",
+                                    data=audio_content,
+                                    file_name=f"resumo_{file_name.replace('.pdf', '')}.mp3",
+                                    mime="audio/mp3"
+                                )
+                            else:
+                                st.error("Falha ao gerar áudio do resumo.")
+                
                 else: # listen_full
-                    spinner_msg = "Gerando áudio do relatório completo... Isso pode demorar!"
-                    with st.spinner(spinner_msg):
+                    with st.spinner("Gerando áudio do relatório completo... Isso pode demorar!"):
                         full_text = file_handler.get_full_pdf_text(file_path)
                         
                         # Dividir o texto em chunks menores para a API de TTS
@@ -168,25 +191,60 @@ def main():
                         )
                         text_chunks = text_splitter.split_text(full_text)
                         
-                        st.text_area("Texto em Áudio (Primeiro Chunk)", text_chunks[0], height=400)
+                        st.info(f"Processando {len(text_chunks)} partes do relatório...")
                         
-                        audio_files = []
+                        # Criar progress bar
+                        progress_bar = st.progress(0)
+                        progress_text = st.empty()
+                        
+                        audio_contents = []
                         for i, chunk in enumerate(text_chunks):
-                            with st.spinner(f"Convertendo chunk {i+1}/{len(text_chunks)} para áudio..."):
-                                audio_fp = llm_services.text_to_speech(chunk)
-                                if audio_fp:
-                                    audio_files.append(audio_fp)
-                                else:
-                                    st.error(f"Falha ao gerar áudio para o chunk {i+1}. Verifique o log para mais detalhes.")
-                                    break # Parar se um chunk falhar
+                            progress_text.text(f"Convertendo parte {i+1}/{len(text_chunks)} para áudio...")
+                            progress_bar.progress((i + 1) / len(text_chunks))
+                            
+                            audio_content = llm_services.text_to_speech(chunk)
+                            if audio_content:
+                                audio_contents.append(audio_content)
+                            else:
+                                st.error(f"Falha ao gerar áudio para a parte {i+1}.")
+                                break
                         
-                        if audio_files:
-                            # Aqui você precisaria de uma forma de concatenar os áudios, 
-                            # ou reproduzi-los sequencialmente. Por simplicidade, 
-                            # vamos reproduzir o primeiro chunk por enquanto.
-                            # Para concatenar, você precisaria de uma biblioteca como pydub.
-                            st.audio(audio_files[0], format='audio/mp3', start_time=0)
-                            st.info("Reproduzindo apenas o primeiro chunk. Para áudio completo, seria necessário concatenar.")
+                        # Limpar progress indicators
+                        progress_bar.empty()
+                        progress_text.empty()
+                        
+                        if audio_contents:
+                            st.subheader("🎧 Áudio do Relatório Completo")
+                            
+                            # Tentar concatenar áudios
+                            with st.spinner("Concatenando arquivos de áudio..."):
+                                final_audio = llm_services.concatenate_audio_files(audio_contents)
+                            
+                            if final_audio:
+                                st.success(f"Áudio completo gerado com {len(audio_contents)} partes!")
+                                st.audio(final_audio, format='audio/mp3')
+                                
+                                # Botão de download
+                                st.download_button(
+                                    label="📥 Baixar Áudio Completo",
+                                    data=final_audio,
+                                    file_name=f"audio_completo_{file_name.replace('.pdf', '')}.mp3",
+                                    mime="audio/mp3"
+                                )
+                            else:
+                                st.warning("Concatenação não disponível. Reproduzindo primeira parte:")
+                                st.audio(audio_contents[0], format='audio/mp3')
+                                
+                                # Opção para baixar partes individuais
+                                st.subheader("📥 Download das Partes Individuais")
+                                for i, audio_content in enumerate(audio_contents):
+                                    st.download_button(
+                                        label=f"Parte {i+1}/{len(audio_contents)}",
+                                        data=audio_content,
+                                        file_name=f"parte_{i+1}_{file_name.replace('.pdf', '')}.mp3",
+                                        mime="audio/mp3",
+                                        key=f"download_part_{i}"
+                                    )
                         else:
                             st.error("Nenhum áudio foi gerado.")
             

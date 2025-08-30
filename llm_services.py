@@ -33,11 +33,40 @@ def text_to_speech(text):
             voice=TTS_VOICE,
             input=text
         )
-        audio_fp = BytesIO(response.content)
-        return audio_fp
+        # Retorna os bytes diretamente para compatibilidade com st.audio
+        return response.content
     except Exception as e:
         print(f"Erro na API de TTS: {e}")
         return None
+
+def concatenate_audio_files(audio_contents_list):
+    """Concatena múltiplos arquivos de áudio usando pydub."""
+    try:
+        from pydub import AudioSegment
+        from io import BytesIO
+        
+        if not audio_contents_list:
+            return None
+            
+        # Carregar o primeiro áudio
+        combined = AudioSegment.from_file(BytesIO(audio_contents_list[0]), format="mp3")
+        
+        # Concatenar os demais
+        for audio_content in audio_contents_list[1:]:
+            audio_segment = AudioSegment.from_file(BytesIO(audio_content), format="mp3")
+            combined += audio_segment
+        
+        # Exportar para bytes
+        output_buffer = BytesIO()
+        combined.export(output_buffer, format="mp3")
+        return output_buffer.getvalue()
+        
+    except ImportError:
+        print("pydub não está disponível para concatenação de áudio")
+        return audio_contents_list[0] if audio_contents_list else None
+    except Exception as e:
+        print(f"Erro ao concatenar áudios: {e}")
+        return audio_contents_list[0] if audio_contents_list else None
 
 def setup_agent(retriever):
     """Inicializa e retorna o agente com suas ferramentas e memória."""
