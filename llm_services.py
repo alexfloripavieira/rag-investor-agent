@@ -40,14 +40,14 @@ def generate_insights_from_documents(retriever, model_name=None):
         model_name = LLM_MODEL_NAME
     llm = ChatOpenAI(model_name=model_name, temperature=0.3)
     
-    # Queries para extrair insights específicos
+    # Queries para extrair insights específicos de FIIs e Ações
     insight_queries = [
-        "Quais são os principais FIIs mencionados e suas características?",
-        "Quais são os rendimentos e dividendos mais destacados?",
-        "Quais setores de investimento imobiliário são mais mencionados?",
-        "Quais são as principais recomendações de investimento?",
-        "Quais são os riscos e oportunidades identificados?",
-        "Quais são as tendências do mercado imobiliário mencionadas?"
+        "Quais são os principais ativos (FIIs e ações) mencionados e suas características principais?",
+        "Quais são os rendimentos, dividendos e performance financeira mais destacados?", 
+        "Quais setores e segmentos (imobiliário, tecnologia, bancos, etc.) são mais mencionados?",
+        "Quais são as principais recomendações de investimento baseadas nos dados financeiros?",
+        "Quais são os riscos e oportunidades identificados nos investimentos analisados?",
+        "Quais indicadores financeiros (P/L, ROE, dividend yield, etc.) se destacam nos relatórios?"
     ]
     
     insights = {}
@@ -87,8 +87,8 @@ def generate_market_summary(retriever, model_name=None):
     llm = ChatOpenAI(model_name=model_name, temperature=0.2)
     
     try:
-        # Buscar documentos para análise geral
-        docs = retriever.invoke("resumo investimentos FII mercado tendências")
+        # Buscar documentos para análise geral de investimentos
+        docs = retriever.invoke("resumo investimentos FII ações mercado tendências performance")
         
         if not docs:
             return "Não há documentos suficientes para gerar resumo do mercado."
@@ -97,19 +97,20 @@ def generate_market_summary(retriever, model_name=None):
         context = "\n\n".join([doc.page_content for doc in docs[:4]])
         
         prompt = f"""
-        Você é um analista financeiro especializado em FIIs. Baseado nos relatórios fornecidos, 
-        crie um RESUMO EXECUTIVO do mercado de Fundos Imobiliários.
+        Você é um analista financeiro especializado em investimentos. Baseado nos relatórios fornecidos, 
+        crie um RESUMO EXECUTIVO do mercado de investimentos (FIIs, Ações e outros ativos).
 
         CONTEXTO DOS RELATÓRIOS:
         {context}
 
         Crie um resumo executivo com:
-        1. **Situação Atual do Mercado**
-        2. **Principais Oportunidades**  
-        3. **Principais Riscos**
-        4. **Recomendações Gerais**
+        1. **Situação Atual do Mercado** (FIIs, Ações, Setores)
+        2. **Performance dos Ativos** (rendimentos, valorização, indicadores)
+        3. **Principais Oportunidades** (setores em alta, ativos promissores)  
+        4. **Principais Riscos** (setores em baixa, riscos sistêmicos)
+        5. **Recomendações Gerais** (estratégias de investimento)
 
-        Seja objetivo, use dados específicos quando disponíveis, e mantenha linguagem profissional:
+        Seja objetivo, cite tickers/códigos quando disponíveis, use dados específicos e mantenha linguagem profissional:
         """
         
         response = llm.invoke(prompt)
@@ -121,8 +122,8 @@ def generate_market_summary(retriever, model_name=None):
 def extract_key_metrics(retriever, model_name=None):
     """Extrai métricas chave dos relatórios."""
     try:
-        # Buscar documentos com dados numéricos
-        docs = retriever.invoke("valor preço rentabilidade dividend yield cotação R$")
+        # Buscar documentos com dados numéricos de FIIs e Ações
+        docs = retriever.invoke("valor preço cotação P/L ROE EBITDA receita lucro dividend yield rentabilidade R$")
         
         if not docs:
             return {}
@@ -133,18 +134,29 @@ def extract_key_metrics(retriever, model_name=None):
         context = "\n\n".join([doc.page_content for doc in docs[:3]])
         
         prompt = f"""
-        Extraia APENAS os dados numéricos e métricas específicas do seguinte contexto.
+        Extraia APENAS os dados numéricos e métricas específicas do seguinte contexto financeiro.
         Retorne em formato estruturado:
 
         CONTEXTO:
         {context}
 
-        Extraia e organize:
-        - Valores de FIIs (formato: CÓDIGO: R$ X,XX)
-        - Rentabilidades/Yields (formato: X,XX% ou X.XX%)
-        - Dividendos (formato: R$ X,XX por cota)
+        Extraia e organize por categoria:
+
+        **FIIs:**
+        - Códigos de FIIs e valores (formato: CÓDIGO: R$ X,XX)
+        - Dividend yield (formato: X,XX%)
+        - Valor patrimonial por cota
+
+        **Ações:**
+        - Tickers e cotações (formato: TICKER4: R$ X,XX)
+        - Indicadores (P/L: X,X | ROE: X,X% | P/VP: X,X)
+        - Receita/Lucro líquido (em milhões)
+
+        **Métricas Gerais:**
+        - Rentabilidades e retornos
+        - Dividendos pagos
         
-        Seja preciso e cite apenas valores que estão explícitos no texto:
+        Seja preciso e cite apenas valores explícitos no texto:
         """
         
         response = llm.invoke(prompt)
@@ -203,22 +215,25 @@ def setup_agent(retriever, model_name=None):
         model_name = LLM_MODEL_NAME
     llm = ChatOpenAI(model_name=model_name, temperature=0.1)
     
-    # Template específico para análise de investimentos
-    template = """Use o contexto dos documentos de investimento para responder à pergunta do usuário de forma precisa e útil.
+    # Template específico para análise de investimentos (FIIs e Ações)
+    template = """Use o contexto dos documentos financeiros para responder à pergunta do usuário de forma precisa e útil.
 
-Contexto dos relatórios de investimento:
+Contexto dos relatórios financeiros (FIIs, Ações e outros investimentos):
 {context}
 
 Pergunta do usuário: {question}
 
 Instruções para sua resposta:
-1. Analise cuidadosamente o contexto fornecido pelos documentos
-2. Se a informação solicitada estiver no contexto, forneça uma resposta clara e detalhada
-3. Inclua valores específicos, datas e dados precisos quando disponíveis
-4. Se a informação não estiver no contexto, informe que não foi encontrada nos documentos processados
-5. Mantenha o foco na análise de investimentos e dados financeiros
+1. **Identifique o tipo de investimento**: FII, ação, fundo, etc.
+2. **Analise o contexto**: Use todas as informações relevantes dos documentos
+3. **Seja específico**: Inclua valores exatos, percentuais, datas, períodos
+4. **Use terminologia adequada**:
+   - FIIs: Valor patrimonial, dividend yield, vacância, NOI
+   - Ações: P/L, P/VP, ROE, EBITDA, receita líquida, margem
+5. **Cite códigos/tickers** quando disponíveis (ex: KNRI11, PETR4)
+6. **Se não encontrar**: Informe claramente que a informação não está nos documentos processados
 
-Resposta detalhada:"""
+Resposta detalhada e técnica:"""
 
     prompt = PromptTemplate(
         template=template,
@@ -245,9 +260,9 @@ Resposta detalhada:"""
             return f"Erro ao acessar os documentos: {str(e)}"
 
     report_analyzer_tool = Tool(
-        name="Consultar_Relatórios_Investimento",
+        name="Consultar_Relatórios_Financeiros",
         func=analyze_investment_reports,
-        description="""SEMPRE use esta ferramenta para perguntas sobre FIIs, códigos de fundos, valores patrimoniais, rendimentos, dividendos ou qualquer informação específica de investimentos. Esta ferramenta busca nos relatórios financeiros processados e carregados no sistema. Input: pergunta sobre investimentos."""
+        description="""SEMPRE use esta ferramenta para perguntas sobre investimentos: FIIs (códigos, valores patrimoniais, rendimentos, dividend yield), Ações (tickers, balanço, DRE, indicadores como P/L, ROE, EBITDA), ou qualquer dado financeiro específico. Busca em todos os relatórios financeiros processados. Input: pergunta sobre investimentos."""
     )
     
     # Ferramenta de busca na web para informações gerais

@@ -138,8 +138,8 @@ def display_pdf(file_path):
         st.info("💡 Tente usar a opção 'Ler PDF (Texto Formatado)' como alternativa.")
 
 def main():
-    st.set_page_config(page_title="Agente de Investimentos", page_icon="📊", layout="wide")
-    st.title("📊 Agente de Análise de Investimentos PRO")
+    st.set_page_config(page_title="Agente de Análise Financeira", page_icon="📈", layout="wide")
+    st.title("📈 Agente de Análise de Investimentos PRO")
 
     # Inicializar o gerenciador do vector store
     vector_manager = VectorStoreManager()
@@ -176,6 +176,7 @@ def main():
         st.session_state.selected_model = selected_model
         
         st.subheader("1. Carregar Novos Relatórios")
+        st.write("📊 **Tipos suportados:** Relatórios de FIIs, Demonstrações Financeiras de Ações, Balanços, DREs, etc.")
         uploaded_files = st.file_uploader("Selecione arquivos PDF", accept_multiple_files=True, type="pdf")
         if uploaded_files:
             count = file_handler.save_uploaded_files(uploaded_files)
@@ -290,8 +291,8 @@ def main():
     # --- Abas Principais ---
     tab_agent, tab_explorer, tab_insights = st.tabs([
         "🗣️ Conversar com Agente", 
-        "📄 Visualizador de Relatório", 
-        "💡 Insights dos Relatórios"
+        "📄 Visualizador de Documentos", 
+        "💡 Insights dos Investimentos"
     ])
 
     with tab_agent:
@@ -327,7 +328,7 @@ def main():
                     st.session_state.messages.append({"role": "assistant", "content": error_message})
 
     with tab_explorer:
-        st.subheader("Leitura, Resumo e Áudio de Relatórios")
+        st.subheader("Leitura, Resumo e Áudio de Documentos Financeiros")
         if 'action' in st.session_state and st.session_state.action:
             action_type, file_path = st.session_state.action
             
@@ -527,20 +528,20 @@ def main():
     with tab_insights:
         # Mostrar modelo ativo
         selected_model = st.session_state.get('selected_model', config.LLM_MODEL_NAME)
-        st.subheader("💡 Insights Automáticos dos Relatórios")
+        st.subheader("💡 Insights Automáticos dos Investimentos")
         st.info(f"🤖 **Modelo ativo:** {config.AVAILABLE_LLM_MODELS.get(selected_model, selected_model)}")
         
         # Verificar se há documentos processados
         doc_count = vector_manager.count_documents()
         if doc_count == 0:
-            st.warning("⚠️ Nenhum relatório foi processado ainda. Faça upload e processe documentos primeiro.")
+            st.warning("⚠️ Nenhum documento financeiro foi processado ainda. Faça upload e processe documentos primeiro.")
             st.info("📝 Vá para a barra lateral e:")
-            st.write("1. Carregar novos relatórios")
-            st.write("2. Processar relatórios")
+            st.write("1. Carregar novos documentos (FIIs, Ações, etc.)")
+            st.write("2. Processar documentos")
             st.write("3. Volte aqui para ver os insights!")
             return
         
-        st.info(f"📊 Analisando {doc_count} chunks de dados dos relatórios processados...")
+        st.info(f"📊 Analisando {doc_count} chunks de dados dos documentos financeiros processados...")
         
         # Botões para diferentes tipos de insights
         col1, col2, col3 = st.columns(3)
@@ -605,12 +606,12 @@ def main():
                     
                     # Criar abas para diferentes insights
                     insight_tabs = st.tabs([
-                        "🏢 FIIs Principais", 
-                        "💰 Rendimentos", 
-                        "🏗️ Setores", 
+                        "🏢 Ativos Principais", 
+                        "💰 Performance", 
+                        "🏗️ Setores & Segmentos", 
                         "📈 Recomendações",
                         "⚠️ Riscos & Oportunidades",
-                        "📊 Tendências"
+                        "📊 Indicadores"
                     ])
                     
                     queries = list(insights.keys())
