@@ -19,24 +19,123 @@ load_dotenv()
 config.ensure_directories_exist()
 
 def display_pdf(file_path):
-    """Exibe um PDF no Streamlit usando um iframe."""
+    """Exibe informações do PDF e oferece opções de visualização."""
     if not os.path.exists(file_path):
         st.error(f"Erro: Arquivo PDF não encontrado em: {file_path}")
         return
 
     try:
+        # Obter informações do arquivo
+        file_size = os.path.getsize(file_path)
+        file_name = os.path.basename(file_path)
+        
+        # Mostrar informações do arquivo
+        st.success(f"📄 **Arquivo encontrado:** {file_name}")
+        st.info(f"📊 **Tamanho:** {file_size / (1024*1024):.1f} MB")
+        
+        # Ler o arquivo
         with open(file_path, "rb") as f:
             pdf_bytes = f.read()
-            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
         
-        st.write(f"Debug: File path: {file_path}")
-        st.write(f"Debug: File size: {len(pdf_bytes)} bytes")
-        st.write(f"Debug: Base64 string length: {len(base64_pdf)} characters")
-
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        # Botão de download principal (mais confiável)
+        st.markdown("""
+        <div style="text-align: center; margin: 30px 0;">
+            <h3 style="color: #4CAF50;">📖 Visualizar PDF</h3>
+            <p style="color: #666;">Use o botão abaixo para baixar e abrir o PDF</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Botão principal de download estilizado
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.download_button(
+                label="📥 BAIXAR E ABRIR PDF",
+                data=pdf_bytes,
+                file_name=file_name,
+                mime="application/pdf",
+                use_container_width=True,
+                type="primary"
+            )
+        
+        # Instruções melhoradas
+        st.markdown("""
+        ### 📋 Como visualizar o PDF:
+        
+        **Método Recomendado (mais confiável):**
+        1. **Clique em "BAIXAR E ABRIR PDF"** acima
+        2. O arquivo será baixado automaticamente 
+        3. Abra o arquivo baixado com seu visualizador de PDF preferido
+        
+        **Métodos Alternativos:**
+        """)
+        
+        # Métodos alternativos
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**🌐 Tentar abrir no navegador:**")
+            # Criar data URL para teste
+            base64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+            data_url = f"data:application/pdf;base64,{base64_pdf}"
+            
+            if st.button("🔗 Tentar abrir no navegador", use_container_width=True):
+                st.markdown(f"""
+                <script>
+                    window.open('{data_url}', '_blank');
+                </script>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <a href="{data_url}" target="_blank" 
+                   style="display: block; 
+                          text-align: center; 
+                          background-color: #0066cc; 
+                          color: white;
+                          padding: 8px;
+                          text-decoration: none;
+                          border-radius: 4px;
+                          margin-top: 8px;">
+                    Se não abriu, clique aqui
+                </a>
+                """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("**📄 Ver como texto:**")
+            if st.button("📖 Ler como texto formatado", use_container_width=True):
+                st.session_state.action = ('read_pdf_text', file_path)
+                st.rerun()
+        
+        # Informações adicionais
+        st.markdown("""
+        ---
+        ### ℹ️ Informações importantes:
+        
+        - **Navegadores modernos** podem bloquear PDFs incorporados por segurança
+        - **Baixar o arquivo** é sempre a opção mais confiável
+        - **Visualizadores recomendados:** Adobe Reader, navegador padrão, visualizador do sistema
+        """)
+        
+        # Mostrar prévia do iframe como última opção
+        with st.expander("🔧 Opções Avançadas - Tentar visualização incorporada"):
+            st.warning("⚠️ Esta opção pode não funcionar em todos os navegadores")
+            
+            if st.button("Tentar visualização incorporada"):
+                try:
+                    # Tentar iframe simples
+                    st.components.v1.html(f"""
+                    <iframe src="{data_url}" 
+                            width="100%" 
+                            height="600px"
+                            style="border: 1px solid #ddd;">
+                        <p>Seu navegador não suporta visualização de PDF incorporado.</p>
+                    </iframe>
+                    """, height=620)
+                except Exception as e:
+                    st.error(f"Visualização incorporada falhou: {e}")
+                    
     except Exception as e:
-        st.error(f"Erro ao exibir o PDF: {e}. Verifique se o arquivo está acessível e não corrompido. Caminho: {file_path}")
+        st.error(f"Erro ao processar o PDF: {e}")
+        st.info("💡 Tente usar a opção 'Ler PDF (Texto Formatado)' como alternativa.")
 
 def main():
     st.set_page_config(page_title="Agente de Investimentos", page_icon="📊", layout="wide")
@@ -135,10 +234,82 @@ def main():
                 display_pdf(file_path)
             
             elif action_type == 'read_pdf_text':
-                st.write("Exibindo Texto do PDF:")
+                # Extrair nome do arquivo
+                file_name = os.path.basename(file_path)
+                
+                st.subheader(f"📄 Texto Extraído: {file_name}")
+                
                 with st.spinner("Extraindo texto do PDF..."):
-                    full_text = file_handler.get_full_pdf_text(file_path)
-                    st.text_area("Conteúdo do PDF", full_text, height=700)
+                    try:
+                        full_text = file_handler.get_full_pdf_text(file_path)
+                        
+                        # Mostrar estatísticas do texto
+                        word_count = len(full_text.split())
+                        char_count = len(full_text)
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("📊 Palavras", f"{word_count:,}")
+                        with col2:
+                            st.metric("🔤 Caracteres", f"{char_count:,}")
+                        with col3:
+                            st.metric("📑 Páginas (aprox.)", max(1, word_count // 250))
+                        
+                        # Botão de download do texto
+                        st.download_button(
+                            label="📥 Baixar Texto (.txt)",
+                            data=full_text,
+                            file_name=f"texto_{file_name.replace('.pdf', '')}.txt",
+                            mime="text/plain"
+                        )
+                        
+                        # Opções de visualização
+                        view_option = st.radio(
+                            "Opções de visualização:",
+                            ["📖 Texto Completo", "🔍 Primeiras 500 palavras", "🎯 Buscar no texto"]
+                        )
+                        
+                        if view_option == "📖 Texto Completo":
+                            st.text_area("Conteúdo do PDF", full_text, height=700)
+                            
+                        elif view_option == "🔍 Primeiras 500 palavras":
+                            words = full_text.split()
+                            preview_text = " ".join(words[:500])
+                            if len(words) > 500:
+                                preview_text += "\n\n[... restante do texto omitido ...]"
+                            st.text_area("Prévia do PDF (500 palavras)", preview_text, height=400)
+                            
+                        elif view_option == "🎯 Buscar no texto":
+                            search_term = st.text_input("Digite o termo para buscar:")
+                            if search_term:
+                                # Buscar termo no texto (case insensitive)
+                                import re
+                                matches = re.finditer(re.escape(search_term), full_text, re.IGNORECASE)
+                                match_positions = [(m.start(), m.end()) for m in matches]
+                                
+                                if match_positions:
+                                    st.success(f"Encontradas {len(match_positions)} ocorrências de '{search_term}'")
+                                    
+                                    # Mostrar contexto das primeiras 5 ocorrências
+                                    for i, (start, end) in enumerate(match_positions[:5]):
+                                        context_start = max(0, start - 100)
+                                        context_end = min(len(full_text), end + 100)
+                                        context = full_text[context_start:context_end]
+                                        
+                                        # Destacar o termo encontrado
+                                        highlighted = context.replace(
+                                            search_term, f"**{search_term}**"
+                                        )
+                                        
+                                        st.write(f"**Ocorrência {i+1}:**")
+                                        st.write(f"...{highlighted}...")
+                                        st.write("---")
+                                else:
+                                    st.warning(f"Termo '{search_term}' não encontrado no texto.")
+                                    
+                    except Exception as e:
+                        st.error(f"Erro ao extrair texto do PDF: {e}")
+                        st.info("💡 Tente a opção 'Ler PDF (Visualizador)' como alternativa.")
             
             elif action_type == 'summarize':
                 with st.spinner("Gerando resumo..."):
