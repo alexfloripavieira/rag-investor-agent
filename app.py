@@ -499,45 +499,62 @@ def main():
 
                 with action_col1:
                     st.markdown("**Leitura e Visualização**")
+                    
+                    current_action = st.session_state.get('action', None)
+                    current_action_type = current_action[0] if current_action else None
+                    
                     if st.button(
-                        "Ver PDF Original", use_container_width=True, key="view_pdf"
+                        "Ver PDF Original", 
+                        use_container_width=True, 
+                        key="view_pdf",
+                        type="primary" if current_action_type == "read_pdf_viewer" else "secondary"
                     ):
                         st.session_state.action = ("read_pdf_viewer", report_path)
+                        st.rerun()
 
                     if st.button(
                         "Extrair Texto Completo",
                         use_container_width=True,
                         key="extract_text",
+                        type="primary" if current_action_type == "read_pdf_text" else "secondary"
                     ):
                         st.session_state.action = ("read_pdf_text", report_path)
+                        st.rerun()
 
                     if st.button(
                         "Gerar Resumo com IA",
                         use_container_width=True,
-                        type="primary",
                         key="generate_summary",
+                        type="primary" if current_action_type == "summarize" else "secondary"
                     ):
                         st.session_state.action = ("summarize", report_path)
+                        st.rerun()
 
                 with action_col2:
                     st.markdown("**Áudio com IA**")
+                    
                     if st.button(
                         "Ouvir Resumo (IA)",
                         use_container_width=True,
                         key="listen_summary",
+                        type="primary" if current_action_type == "listen_summary" else "secondary"
                     ):
                         st.session_state.action = ("listen_summary", report_path)
+                        st.rerun()
 
                     if st.button(
                         "Ouvir Relatório Completo (IA)",
                         use_container_width=True,
                         key="listen_full",
+                        type="primary" if current_action_type == "listen_full" else "secondary"
                     ):
                         st.session_state.action = ("listen_full", report_path)
+                        st.rerun()
 
                     st.caption(
                         "Nota: Áudio completo pode levar vários minutos para textos longos"
                     )
+
         if "action" in st.session_state and st.session_state.action:
             action_type, file_path = st.session_state.action
 
@@ -768,8 +785,6 @@ def main():
                         else:
                             st.error("Nenhum áudio foi gerado.")
 
-            
-            st.session_state.action = None
 
     
     elif active_tab == "insights":
