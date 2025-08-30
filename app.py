@@ -139,7 +139,62 @@ def display_pdf(file_path):
 
 def main():
     st.set_page_config(page_title="Agente de Análise Financeira", layout="wide")
-    st.title("Agente de Análise de Investimentos PRO")
+    # CSS customizado para remover cores vermelhas e usar azul
+    st.markdown("""
+    <style>
+    /* Remover TODAS as cores vermelhas e usar azul */
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
+        border: none !important;
+        color: white !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    .stButton > button[kind="primary"]:hover {
+        background: linear-gradient(135deg, #357ABD 0%, #2E6DA4 100%) !important;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4) !important;
+        transform: translateY(-1px) !important;
+    }
+    
+    .stButton > button[kind="primary"]:active {
+        background: linear-gradient(135deg, #2E6DA4 0%, #245580 100%) !important;
+        box-shadow: 0 2px 6px rgba(74, 144, 226, 0.5) !important;
+        transform: translateY(0px) !important;
+    }
+    
+    .stButton > button[kind="primary"]:focus {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
+        box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3) !important;
+        outline: none !important;
+    }
+    
+    /* Customizar tabs para usar azul */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%) !important;
+        color: white !important;
+        border-bottom: none !important;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"]:hover {
+        background: linear-gradient(135deg, #357ABD 0%, #2E6DA4 100%) !important;
+    }
+    
+    /* Forçar botões de radio e checkbox para azul */
+    .stRadio > div[role="radiogroup"] > label > div:first-child {
+        background-color: #4A90E2 !important;
+    }
+    
+    /* Selectbox ativo */
+    .stSelectbox > div > div > div[data-selected="true"] {
+        background-color: #4A90E2 !important;
+    }
+    </style>
+    
+    <h1 style="font-size: 2.2rem; font-weight: 600; margin-bottom: 2rem; text-align: center; line-height: 1.2;">
+        Agente de Análise de Investimentos PRO
+    </h1>
+    """, unsafe_allow_html=True)
 
     # Inicializar o gerenciador do vector store
     vector_manager = VectorStoreManager()
@@ -152,12 +207,58 @@ def main():
     with st.sidebar:
         st.markdown("# Menu Principal")
         
-        # Menu de navegação
-        menu_option = st.radio(
-            "Navegação:",
-            ["Dashboard", "Documentos", "Configurações", "Sistema"],
-            index=0
-        )
+        # Inicializar menu selecionado
+        if 'selected_menu' not in st.session_state:
+            st.session_state.selected_menu = "Dashboard"
+        
+        # CSS customizado para menu com hover
+        st.markdown("""
+        <style>
+        .menu-item {
+            padding: 12px 16px;
+            margin: 4px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            color: #ffffff;
+        }
+        .menu-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+        .menu-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            font-weight: 600;
+        }
+        .menu-item.active:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Menu customizado
+        menu_options = ["Dashboard", "Documentos", "Configurações", "Sistema"]
+        
+        for option in menu_options:
+            active_class = "active" if st.session_state.selected_menu == option else ""
+            
+            if st.button(
+                option,
+                key=f"menu_{option}",
+                use_container_width=True,
+                type="primary" if st.session_state.selected_menu == option else "secondary"
+            ):
+                st.session_state.selected_menu = option
+                st.rerun()
+        
+        menu_option = st.session_state.selected_menu
         
         st.divider()
         
@@ -219,17 +320,20 @@ def main():
             
             # Indicador visual do modelo
             model_info = {
-                "gpt-5": ("Máxima Qualidade", "error"),
-                "gpt-4o": ("Premium", "warning"), 
-                "gpt-4-turbo": ("Avançado", "warning"),
-                "gpt-4": ("Clássico", "warning"),
-                "gpt-3.5-turbo": ("Econômico", "success"),
-                "gpt-4o-mini": ("Balanceado", "info")
+                "gpt-5": ("Máxima Qualidade", "blue"),
+                "gpt-4o": ("Premium", "blue"), 
+                "gpt-4-turbo": ("Avançado", "blue"),
+                "gpt-4": ("Clássico", "blue"),
+                "gpt-3.5-turbo": ("Econômico", "green"),
+                "gpt-4o-mini": ("Balanceado", "blue")
             }
             
             if selected_model in model_info:
                 desc, color = model_info[selected_model]
-                st.markdown(f":{color}[**{desc}**]")
+                if color == "blue":
+                    st.info(f"**{desc}**")
+                elif color == "green":
+                    st.success(f"**{desc}**")
             
             st.session_state.selected_model = selected_model
         

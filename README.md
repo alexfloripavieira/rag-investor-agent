@@ -1,8 +1,17 @@
-# Agente de Análise de Investimentos RAG
+# Agente de Análise de Investimentos PRO
 
 ## Visão Geral
 
-O Agente de Análise de Investimentos RAG é uma aplicação avançada que utiliza Retrieval-Augmented Generation (RAG) para análise inteligente de documentos financeiros. A aplicação combina processamento de documentos PDF, embeddings vetoriais, e modelos de linguagem para fornecer insights automáticos, conversação inteligente e análises detalhadas de investimentos.
+O Agente de Análise de Investimentos PRO é uma aplicação avançada que utiliza Retrieval-Augmented Generation (RAG) para análise inteligente de documentos financeiros. A aplicação combina processamento de documentos PDF, embeddings vetoriais, e modelos de linguagem para fornecer insights automáticos, conversação inteligente e análises detalhadas de investimentos (FIIs, Ações, DREs, Balanços).
+
+### Principais Funcionalidades
+
+- **Interface Moderna**: Menu hamburger organizado sem ícones, com design limpo e profissional
+- **Chat Inteligente**: Conversação com IA usando RAG para consultar documentos processados
+- **Processamento Paralelo**: Execute múltiplas ações simultaneamente sem interrupções
+- **Centro de Áudio**: Geração paralela de áudios com TTS para resumos e documentos completos
+- **Insights Automáticos**: Análise de investimentos com métricas e recomendações baseadas em IA
+- **Modelo Selecionável**: Escolha entre 6 modelos LLM (GPT-3.5-turbo até GPT-5)
 
 ## Arquitetura do Sistema
 
@@ -14,18 +23,18 @@ graph TB
     ST --> FM[File Manager]
     ST --> VM[Vector Manager]
     ST --> LLM[LLM Services]
-    
+
     FM --> RN[reports_new/]
     FM --> RP[reports_processed/]
-    
+
     VM --> CB[ChromaDB]
     VM --> OE[OpenAI Embeddings]
-    
+
     LLM --> OA[OpenAI API]
     LLM --> LC[LangChain]
-    
+
     CB --> VS[vector_store_chroma/]
-    
+
     subgraph "RAG Pipeline"
         PDF[PDF Documents] --> TXT[Text Extraction]
         TXT --> CHK[Text Chunking]
@@ -33,7 +42,7 @@ graph TB
         EMB --> IDX[Vector Indexing]
         IDX --> CB
     end
-    
+
     subgraph "Query Processing"
         Q[User Query] --> RET[Vector Retrieval]
         RET --> CTX[Context Assembly]
@@ -51,25 +60,25 @@ graph LR
         UI[User Interface]
         TABS[Tab Components]
     end
-    
+
     subgraph "Business Logic Layer"
         FM[FileHandler]
         VM[VectorStoreManager]
         LLM[LLMServices]
         CFG[Config]
     end
-    
+
     subgraph "Data Layer"
         FS[File System]
         CB[ChromaDB]
         VS[Vector Store]
     end
-    
+
     subgraph "External Services"
         OAI[OpenAI API]
         DDG[DuckDuckGo Search]
     end
-    
+
     ST --> FM
     ST --> VM
     ST --> LLM
@@ -78,7 +87,7 @@ graph LR
     VM --> VS
     LLM --> OAI
     LLM --> DDG
-    
+
     CFG --> FM
     CFG --> VM
     CFG --> LLM
@@ -94,20 +103,20 @@ sequenceDiagram
     participant VM as VectorManager
     participant CB as ChromaDB
     participant OAI as OpenAI
-    
+
     U->>ST: Upload PDF
     ST->>FM: save_uploaded_files()
     FM->>FS: Salvar em reports_new/
-    
+
     U->>ST: Processar Relatórios
     ST->>FM: get_new_reports_to_process()
     FM-->>ST: Lista de arquivos
-    
+
     loop Para cada arquivo
         ST->>VM: is_document_already_processed()
         VM->>CB: Verificar duplicatas
         CB-->>VM: Resultado verificação
-        
+
         alt Não é duplicata
             ST->>VM: add_documents_from_file()
             VM->>VM: Carregar PDF
@@ -122,7 +131,7 @@ sequenceDiagram
             ST->>U: Arquivo já processado
         end
     end
-    
+
     ST-->>U: Processamento concluído
 ```
 
@@ -136,16 +145,16 @@ sequenceDiagram
     participant VM as VectorManager
     participant CB as ChromaDB
     participant OAI as OpenAI
-    
+
     U->>ST: Solicitar Insights
     ST->>VM: count_documents()
     VM-->>ST: Número de chunks
-    
+
     alt Documentos disponíveis
         U->>ST: Escolher tipo de insight
         ST->>VM: get_retriever()
         VM-->>ST: Retriever configurado
-        
+
         alt Resumo Executivo
             ST->>LLM: generate_market_summary()
             LLM->>VM: retriever.invoke(query)
@@ -176,7 +185,7 @@ sequenceDiagram
             end
             LLM-->>ST: Conjunto de insights
         end
-        
+
         ST-->>U: Insights apresentados
     else Sem documentos
         ST-->>U: Aviso para processar documentos
@@ -189,49 +198,49 @@ sequenceDiagram
 flowchart TD
     START([Início]) --> UPLOAD[Upload de PDFs]
     UPLOAD --> CHECK{Arquivo já processado?}
-    
+
     CHECK -->|Não| PROCESS[Processar Documento]
     CHECK -->|Sim| SKIP[Pular Processamento]
-    
+
     PROCESS --> EXTRACT[Extrair Texto]
     EXTRACT --> CHUNK[Dividir em Chunks]
     CHUNK --> EMBED[Gerar Embeddings]
     EMBED --> STORE[Armazenar no ChromaDB]
     STORE --> MOVE[Mover para Processados]
-    
+
     SKIP --> MOVE
     MOVE --> READY[Sistema Pronto]
-    
+
     READY --> QUERY{Tipo de Uso}
-    
+
     QUERY -->|Chat| CHAT[Conversação]
     QUERY -->|Visualizar| VIEW[Visualizar PDF]
     QUERY -->|Insights| INSIGHTS[Gerar Insights]
-    
+
     CHAT --> RETRIEVE1[Recuperar Contexto]
     RETRIEVE1 --> AGENT[Agente Conversacional]
     AGENT --> RESPONSE1[Resposta ao Usuario]
-    
+
     VIEW --> DISPLAY[Exibir PDF/Texto]
     DISPLAY --> RESPONSE2[Visualização]
-    
+
     INSIGHTS --> TYPE{Tipo de Insight}
     TYPE -->|Resumo| SUMMARY[Resumo Executivo]
     TYPE -->|Métricas| METRICS[Extrair Métricas]
     TYPE -->|Detalhado| DETAILED[Análise Detalhada]
-    
+
     SUMMARY --> RETRIEVE2[Buscar Documentos]
     METRICS --> RETRIEVE3[Buscar Dados Numéricos]
     DETAILED --> RETRIEVE4[Buscar por Categorias]
-    
+
     RETRIEVE2 --> GENERATE1[Gerar com IA]
     RETRIEVE3 --> GENERATE2[Extrair com IA]
     RETRIEVE4 --> GENERATE3[Analisar com IA]
-    
+
     GENERATE1 --> RESPONSE3[Insights Gerados]
     GENERATE2 --> RESPONSE3
     GENERATE3 --> RESPONSE3
-    
+
     RESPONSE1 --> END([Fim])
     RESPONSE2 --> END
     RESPONSE3 --> END
@@ -239,7 +248,20 @@ flowchart TD
 
 ## Funcionalidades Principais
 
-### 1. Seleção de Modelo LLM
+### 1. Interface Moderna e Design System
+
+- **Menu Hamburger**: Navegação organizada em 4 seções (Dashboard, Documentos, Configurações, Sistema)
+- **Sem Ícones**: Design limpo e profissional focado em funcionalidade
+- **Paleta de Cores Consistente**:
+  - **Azul Principal**: `#4A90E2` - Para ações principais e elementos ativos
+  - **Verde**: Para informações de sucesso e economia
+  - **Vermelho**: APENAS para números negativos (quando necessário)
+- **Hover Effects**: Transições suaves com sombras e elevação
+- **Tabs Dinâmicas**: Sistema de navegação reativo sem recarregamento
+- **Tipografia Otimizada**: Título em linha única com fonte ajustada
+
+### 2. Seleção de Modelo LLM
+
 - **Dropdown interativo** na barra lateral para escolha do modelo
 - **6 modelos disponíveis**: GPT-4o-mini, GPT-4o, GPT-4-turbo, GPT-3.5-turbo, GPT-4, GPT-5
 - **Indicadores visuais** mostrando custo/qualidade de cada modelo
@@ -247,6 +269,7 @@ flowchart TD
 - **Interface intuitiva** com descrições e recomendações de uso
 
 ### 2. Upload e Processamento de Documentos
+
 - Upload de múltiplos PDFs simultaneamente
 - Detecção automática de duplicatas
 - Processamento com divisão inteligente em chunks
@@ -254,6 +277,7 @@ flowchart TD
 - Armazenamento persistente no ChromaDB
 
 ### 3. Interface de Conversação
+
 - Chat interativo com agente IA
 - Respostas baseadas no conteúdo dos documentos
 - Integração com busca web (DuckDuckGo)
@@ -261,6 +285,7 @@ flowchart TD
 - Processamento de linguagem natural
 
 ### 4. Visualização de Documentos
+
 - Visualizador de PDF integrado
 - Extração e exibição de texto formatado
 - Busca dentro do texto
@@ -268,6 +293,7 @@ flowchart TD
 - Estatísticas de documento
 
 ### 5. Geração de Insights Automáticos
+
 - **Resumo Executivo**: Análise geral do mercado
 - **Métricas Chave**: Extração de dados numéricos
 - **Análise Detalhada**: Insights categorizados por:
@@ -278,9 +304,20 @@ flowchart TD
   - Riscos e Oportunidades
   - Tendências de Mercado
 
-### 6. Funcionalidades de Áudio
-- Text-to-Speech (TTS) para resumos
-- Text-to-Speech para documentos completos
+### 6. Centro de Áudio e Processamento Paralelo
+
+- **Execução Paralela**: Múltiplas ações simultâneas sem interrupção
+- **Text-to-Speech Avançado**:
+  - Resumo inteligente com IA (30-60 segundos)
+  - Documento completo processado em chunks
+  - Qualidade de voz "onyx" da OpenAI
+- **Estado Persistente**: Cache por documento para reutilização
+- **Progress Bars**: Feedback visual para operações longas
+- **4 Ações Principais**:
+  1. **Ler PDF Original** - Visualização e download
+  2. **Extrair Texto Completo** - Processamento e busca
+  3. **Gerar Resumo com IA** - Síntese inteligente
+  4. **Gerar Áudio (Resumo e Completo)** - TTS de alta qualidade
 - Concatenação automática de áudio
 - Controles de reprodução nativos
 - Download de arquivos de áudio
@@ -288,11 +325,13 @@ flowchart TD
 ## Stack Tecnológico
 
 ### Frontend
+
 - **Streamlit**: Interface web reativa
 - **HTML/CSS**: Customizações de interface
 - **JavaScript**: Componentes interativos
 
 ### Backend
+
 - **Python 3.12**: Linguagem principal
 - **LangChain**: Framework para LLM
 - **ChromaDB**: Banco de dados vetorial
@@ -300,7 +339,8 @@ flowchart TD
 - **pydub**: Manipulação de áudio
 
 ### Inteligência Artificial
-- **Modelos LLM Selecionáveis**: 
+
+- **Modelos LLM Selecionáveis**:
   - GPT-4o-mini (padrão - rápido e econômico)
   - GPT-4o (mais inteligente, mais caro)
   - GPT-4-turbo (avançado)
@@ -312,6 +352,7 @@ flowchart TD
 - **DuckDuckGo Search**: Busca web complementar
 
 ### Infraestrutura
+
 - **Docker**: Containerização
 - **Docker Compose**: Orquestração
 - **Environment Variables**: Configuração segura
@@ -321,10 +362,12 @@ flowchart TD
 ### Para Usuários
 
 1. **Acesso Initial**
+
    - Abra a aplicação em http://localhost:8501
    - Visualize a interface com 3 abas principais
 
 2. **Seleção do Modelo LLM**
+
    - Na barra lateral, seção "🤖 Configuração do Modelo"
    - Escolha entre 6 modelos disponíveis no dropdown:
      - **GPT-4o-mini**: Rápido e econômico (recomendado para uso geral)
@@ -335,29 +378,35 @@ flowchart TD
    - Observe os indicadores de custo/qualidade abaixo do seletor
 
 3. **Carregamento de Documentos**
+
    - Na barra lateral, use "Carregar Novos Relatórios"
    - Selecione um ou mais arquivos PDF
    - Aguarde confirmação do upload
 
 4. **Processamento**
+
    - Clique em "Integrar Novos Relatórios ao Agente"
    - Observe o status de cada arquivo (Novo/Já Processado)
    - Aguarde o processamento RAG completar
 
 5. **Uso das Funcionalidades**
+
    - **Modelo ativo**: Indicado no topo de cada aba (chat e insights)
 
    **Aba "Conversar com Agente":**
+
    - Digite perguntas sobre seus relatórios
    - Receba respostas contextualizadas
    - Histórico de conversação mantido
 
    **Aba "Visualizador de Relatório":**
+
    - Selecione um relatório processado
    - Escolha entre visualização PDF ou texto
    - Use funcionalidades de busca e download
 
    **Aba "Insights dos Relatórios":**
+
    - Clique em "Resumo Executivo" para análise geral
    - Use "Métricas Chave" para dados específicos
    - "Análise Detalhada" para insights categorizados
@@ -370,11 +419,13 @@ flowchart TD
 ### Para Administradores
 
 1. **Configuração de Ambiente**
+
    - Configure OPENAI_API_KEY no arquivo .env
    - Ajuste parâmetros em config.py conforme necessário
    - Verifique dependências FFmpeg para TTS
 
 2. **Monitoramento**
+
    - Acompanhe logs de processamento
    - Monitore uso do ChromaDB
    - Verifique métricas de performance
@@ -391,12 +442,14 @@ flowchart TD
 A aplicação implementa um pipeline RAG completo:
 
 1. **Ingestão de Documentos**
+
    ```python
    # Fluxo de processamento
    PDF → PyPDFLoader → TextSplitter → OpenAIEmbeddings → ChromaDB
    ```
 
 2. **Recuperação (Retrieval)**
+
    ```python
    # Busca por similaridade
    Query → Embedding → ChromaDB.similarity_search → Documentos Relevantes
@@ -411,6 +464,7 @@ A aplicação implementa um pipeline RAG completo:
 ### Componentes Principais
 
 #### VectorStoreManager
+
 - Gerencia embeddings e armazenamento vetorial
 - Implementa detecção de duplicatas
 - Otimiza consultas por similaridade
@@ -426,6 +480,7 @@ class VectorStoreManager:
 ```
 
 #### LLMServices
+
 - Encapsula interações com OpenAI
 - **Suporte a múltiplos modelos LLM**: Todas as funções aceitam parâmetro `model_name` opcional
 - Implementa diferentes tipos de prompts especializados
@@ -444,6 +499,7 @@ def setup_agent(retriever, model_name=None):
 ```
 
 #### FileHandler
+
 - Gerencia fluxo de arquivos
 - Implementa sistema anti-duplicação
 - Controla persistência de dados
@@ -452,12 +508,14 @@ def setup_agent(retriever, model_name=None):
 ### Otimizações Implementadas
 
 1. **Performance**
+
    - Chunking otimizado (1000 chars, 200 overlap)
    - Retrieval configurável (k=4 padrão)
    - Cache de embeddings no ChromaDB
    - Processamento assíncrono de áudio
 
 2. **Qualidade**
+
    - **Seleção de modelo otimizada**: 6 opções para diferentes necessidades
    - **GPT-4o-mini padrão**: Equilibra qualidade e custo
    - **Modelos premium disponíveis**: Para análises mais complexas
@@ -478,11 +536,13 @@ def setup_agent(retriever, model_name=None):
 ### Segurança e Boas Práticas
 
 1. **Dados Sensíveis**
+
    - API keys em variáveis de ambiente
    - .gitignore para dados locais
    - Não exposição de embeddings
 
 2. **Validação**
+
    - Verificação de tipos de arquivo
    - Sanitização de inputs
    - Tratamento de exceções
@@ -495,6 +555,7 @@ def setup_agent(retriever, model_name=None):
 ## Configuração e Instalação
 
 ### Pré-requisitos
+
 - Python 3.12+
 - Docker e Docker Compose
 - FFmpeg (para funcionalidades TTS)
@@ -503,12 +564,14 @@ def setup_agent(retriever, model_name=None):
 ### Instalação via Docker (Recomendado)
 
 1. **Clone o repositório**
+
    ```bash
    git clone <repository-url>
    cd rag-investor-agent
    ```
 
 2. **Configure variáveis de ambiente**
+
    ```bash
    cp .env.example .env
    # Edite .env com sua OPENAI_API_KEY
@@ -522,6 +585,7 @@ def setup_agent(retriever, model_name=None):
 ### Instalação Local
 
 1. **Ambiente Python**
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # Linux/macOS
@@ -530,6 +594,7 @@ def setup_agent(retriever, model_name=None):
    ```
 
 2. **Instale dependências**
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -564,6 +629,7 @@ rag-investor-agent/
 ## Contribuição
 
 ### Desenvolvimento
+
 1. Faça fork do projeto
 2. Crie branch para feature (`git checkout -b feature/nova-funcionalidade`)
 3. Commit mudanças (`git commit -am 'Adiciona nova funcionalidade'`)
@@ -571,6 +637,7 @@ rag-investor-agent/
 5. Abra Pull Request
 
 ### Testes
+
 - Execute `python test_rag.py` para testar pipeline RAG
 - Use `python test_insights.py` para validar geração de insights
 - Execute `python test_duplicates.py` para verificar anti-duplicação
