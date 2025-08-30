@@ -201,37 +201,73 @@ def setup_agent(retriever, model_name=None):
     """Inicializa e retorna o agente com suas ferramentas e memória."""
     if model_name is None:
         model_name = LLM_MODEL_NAME
-    llm = ChatOpenAI(model_name=model_name, temperature=0)
+    llm = ChatOpenAI(model_name=model_name, temperature=0.1)
     
-    # Ferramenta RAG que usa o retriever do ChromaDB
+    # Template específico para análise de investimentos
+    template = """Use o contexto dos documentos de investimento para responder à pergunta do usuário de forma precisa e útil.
+
+Contexto dos relatórios de investimento:
+{context}
+
+Pergunta do usuário: {question}
+
+Instruções para sua resposta:
+1. Analise cuidadosamente o contexto fornecido pelos documentos
+2. Se a informação solicitada estiver no contexto, forneça uma resposta clara e detalhada
+3. Inclua valores específicos, datas e dados precisos quando disponíveis
+4. Se a informação não estiver no contexto, informe que não foi encontrada nos documentos processados
+5. Mantenha o foco na análise de investimentos e dados financeiros
+
+Resposta detalhada:"""
+
+    prompt = PromptTemplate(
+        template=template,
+        input_variables=["context", "question"]
+    )
+    
     qa_chain = RetrievalQA.from_chain_type(
         llm=llm, 
         chain_type="stuff", 
-        retriever=retriever
-    )
-    # Usar invoke para a cadeia RAG
-    def run_qa_chain_with_invoke(question):
-        return qa_chain.invoke({"query": question})["result"]
-
-    report_analyzer_tool = Tool(
-        name="Analisador de Relatórios Financeiros",
-        func=run_qa_chain_with_invoke,
-        description="Você é um assistente virtual que irá responder dúvidas dos clientes. Use os seguintes trechos de contexto recuperado para responder à pergunta. Se você não souber a resposta, diga que não sabe. Use no máximo três frases e mantenha a resposta concisa"
+        retriever=retriever,
+        chain_type_kwargs={"prompt": prompt}
     )
     
-    # Ferramenta de busca na web
+    # Wrapper function para a ferramenta RAG
+    def analyze_investment_reports(question):
+        """Analisa relatórios de investimento para responder perguntas específicas."""
+        try:
+            print(f"🔍 Analisando pergunta: {question}")
+            result = qa_chain.invoke({"query": question})
+            print(f"📄 Resultado da busca: {result['result'][:200]}...")
+            return result["result"]
+        except Exception as e:
+            print(f"❌ Erro ao acessar documentos: {str(e)}")
+            return f"Erro ao acessar os documentos: {str(e)}"
+
+    report_analyzer_tool = Tool(
+        name="Consultar_Relatórios_Investimento",
+        func=analyze_investment_reports,
+        description="""SEMPRE use esta ferramenta para perguntas sobre FIIs, códigos de fundos, valores patrimoniais, rendimentos, dividendos ou qualquer informação específica de investimentos. Esta ferramenta busca nos relatórios financeiros processados e carregados no sistema. Input: pergunta sobre investimentos."""
+    )
+    
+    # Ferramenta de busca na web para informações gerais
     web_search_tool = DuckDuckGoSearchRun()
     
     tools = [report_analyzer_tool, web_search_tool]
     
-    # Configura a memória para o agente
+    # Configurar a memória para o agente
     memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-    return initialize_agent(
+    # Inicializar agente com configuração padrão mas instruções específicas
+    agent_executor = initialize_agent(
         tools,
         llm,
-        agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION, # Agente que suporta memória
+        agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
         verbose=True,
         memory=memory,
-        handle_parsing_errors=True # Adicionado para tratamento de erros
+        handle_parsing_errors=True,
+        max_iterations=4,
+        early_stopping_method="generate"
     )
+    
+    return agent_executor
