@@ -158,33 +158,69 @@ def main():
             st.success(f"{count} arquivo(s) pronto(s) para processamento.")
 
         st.subheader("2. Processar Relatórios")
+        
+        # Mostrar arquivos pendentes com status
+        new_reports = file_handler.get_new_reports_to_process()
+        if new_reports:
+            st.write("**Arquivos pendentes:**")
+            for report_path in new_reports:
+                file_name = os.path.basename(report_path)
+                is_duplicate = vector_manager.is_document_already_processed(report_path)
+                if is_duplicate:
+                    st.warning(f"🚫 {file_name} - JÁ PROCESSADO")
+                else:
+                    st.info(f"📄 {file_name} - Novo")
+        
         if st.button("Integrar Novos Relatórios ao Agente"):
-            new_reports = file_handler.get_new_reports_to_process()
             if not new_reports:
                 st.info("Nenhum novo relatório para processar.")
             else:
                 with st.spinner(f"Processando {len(new_reports)} relatório(s)..."):
+                    processed_count = 0
+                    skipped_count = 0
+                    
                     for report_path in new_reports:
-                        vector_manager.add_documents_from_file(report_path)
-                        file_handler.move_processed_file(report_path)
-                    st.success("Banco de dados vetorial atualizado com sucesso!")
+                        chunks_added = vector_manager.add_documents_from_file(report_path)
+                        if chunks_added > 0:
+                            processed_count += 1
+                            file_handler.move_processed_file(report_path)
+                            st.success(f"✅ {os.path.basename(report_path)} - {chunks_added} chunks adicionados")
+                        else:
+                            skipped_count += 1
+                            # Ainda mover arquivo mesmo se foi pulado (já processado)
+                            file_handler.move_processed_file(report_path)
+                            st.info(f"⏭️ {os.path.basename(report_path)} - Pulado (duplicata)")
+                    
+                    if processed_count > 0:
+                        st.success(f"🎉 {processed_count} arquivo(s) processado(s) com sucesso!")
+                    if skipped_count > 0:
+                        st.info(f"⏭️ {skipped_count} arquivo(s) pulado(s) (já processados)")
         
         # Mostrar informações do Vector Store
         with st.expander("📊 Informações do Banco de Dados Vetorial (RAG)"):
             try:
                 doc_count = vector_manager.count_documents()
                 collection_info = vector_manager.get_collection_info()
+                processed_docs_info = vector_manager.get_processed_documents_info()
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("📄 Chunks totais", doc_count)
                 with col2:
-                    st.metric("🗂️ Coleção", collection_info.get('name', 'N/A'))
+                    st.metric("📁 Documentos únicos", len(processed_docs_info))
                 with col3:
                     st.metric("🧠 Modelo Embeddings", config.EMBEDDING_MODEL_NAME)
                 
                 if doc_count > 0:
                     st.success("✅ Vector Store funcionando corretamente!")
+                    
+                    # Mostrar documentos processados
+                    if processed_docs_info:
+                        st.write("**📋 Documentos processados:**")
+                        for doc_name, info in processed_docs_info.items():
+                            chunk_count = info['chunk_count']
+                            total_chunks = info['total_chunks']
+                            st.write(f"• **{doc_name}**: {chunk_count} chunks")
                     
                     # Teste de busca simples
                     if st.button("🔍 Testar busca no RAG"):

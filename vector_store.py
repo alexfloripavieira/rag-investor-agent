@@ -35,12 +35,68 @@ class VectorStoreManager:
             print(f"❌ Erro ao inicializar ChromaDB: {e}")
             self.vector_store = None
 
+    def is_document_already_processed(self, file_path):
+        """Verifica se um documento já foi processado baseado no nome do arquivo."""
+        if self.vector_store is None:
+            return False
+            
+        file_name = os.path.basename(file_path)
+        try:
+            # Buscar por documentos com este source_file
+            results = self.vector_store.get(
+                where={"source_file": file_name}
+            )
+            is_processed = len(results['ids']) > 0
+            
+            if is_processed:
+                print(f"⚠️ Documento já processado: {file_name} ({len(results['ids'])} chunks encontrados)")
+            
+            return is_processed
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao verificar duplicata: {e}")
+            return False
+    
+    def get_processed_documents_info(self):
+        """Retorna informações sobre documentos já processados."""
+        if self.vector_store is None:
+            return {}
+            
+        try:
+            # Obter todos os documentos
+            all_docs = self.vector_store.get()
+            
+            # Agrupar por source_file
+            doc_info = {}
+            for i, metadata in enumerate(all_docs['metadatas']):
+                source_file = metadata.get('source_file', 'unknown')
+                if source_file not in doc_info:
+                    doc_info[source_file] = {
+                        'chunk_count': 0,
+                        'total_chunks': metadata.get('total_chunks', 0)
+                    }
+                doc_info[source_file]['chunk_count'] += 1
+            
+            return doc_info
+            
+        except Exception as e:
+            print(f"⚠️ Erro ao obter informações dos documentos: {e}")
+            return {}
+
     def add_documents_from_file(self, file_path):
         """Carrega, divide e adiciona documentos de um arquivo ao ChromaDB."""
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Arquivo não encontrado: {file_path}")
+        
+        file_name = os.path.basename(file_path)
+        
+        # Verificar se documento já foi processado
+        if self.is_document_already_processed(file_path):
+            print(f"🚫 DOCUMENTO JÁ PROCESSADO: {file_name}")
+            print(f"⏭️ Pulando processamento para evitar duplicatas")
+            return 0
             
-        print(f"📄 Processando arquivo: {os.path.basename(file_path)}")
+        print(f"📄 Processando arquivo: {file_name}")
         
         try:
             # Carregar o PDF
