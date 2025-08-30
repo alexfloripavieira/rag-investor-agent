@@ -263,8 +263,12 @@ def main():
             if col5.button("🎧 Ouvir Relatório Completo", key=f"listen_full_{selected_report}", help="Pode levar vários minutos para textos longos."):
                 st.session_state.action = ('listen_full', report_path)
 
-    # --- Abas Principais (Agente e Visualizador) ---
-    tab_agent, tab_explorer = st.tabs(["🗣️ Conversar com Agente", "📄 Visualizador de Relatório"])
+    # --- Abas Principais ---
+    tab_agent, tab_explorer, tab_insights = st.tabs([
+        "🗣️ Conversar com Agente", 
+        "📄 Visualizador de Relatório", 
+        "💡 Insights dos Relatórios"
+    ])
 
     with tab_agent:
         st.subheader("Converse com o Agente")
@@ -490,6 +494,129 @@ def main():
             
             # Limpa a ação para evitar reexecução
             st.session_state.action = None
+
+    with tab_insights:
+        st.subheader("💡 Insights Automáticos dos Relatórios")
+        
+        # Verificar se há documentos processados
+        doc_count = vector_manager.count_documents()
+        if doc_count == 0:
+            st.warning("⚠️ Nenhum relatório foi processado ainda. Faça upload e processe documentos primeiro.")
+            st.info("📝 Vá para a barra lateral e:")
+            st.write("1. Carregar novos relatórios")
+            st.write("2. Processar relatórios")
+            st.write("3. Volte aqui para ver os insights!")
+            return
+        
+        st.info(f"📊 Analisando {doc_count} chunks de dados dos relatórios processados...")
+        
+        # Botões para diferentes tipos de insights
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("📋 Resumo Executivo", use_container_width=True):
+                st.session_state.insight_action = "market_summary"
+        
+        with col2:
+            if st.button("📊 Métricas Chave", use_container_width=True):
+                st.session_state.insight_action = "key_metrics"
+        
+        with col3:
+            if st.button("🔍 Análise Detalhada", use_container_width=True):
+                st.session_state.insight_action = "detailed_insights"
+        
+        # Processar ações de insights
+        if 'insight_action' in st.session_state and st.session_state.insight_action:
+            action = st.session_state.insight_action
+            retriever = vector_manager.get_retriever(k=6)  # Mais contexto para insights
+            
+            if action == "market_summary":
+                st.subheader("📋 Resumo Executivo do Mercado")
+                with st.spinner("Gerando resumo executivo..."):
+                    summary = llm_services.generate_market_summary(retriever)
+                    st.markdown(summary)
+                    
+                    # Botão para download
+                    st.download_button(
+                        label="📥 Baixar Resumo Executivo",
+                        data=summary,
+                        file_name="resumo_executivo_fii.txt",
+                        mime="text/plain"
+                    )
+            
+            elif action == "key_metrics":
+                st.subheader("📊 Métricas Chave Extraídas")
+                with st.spinner("Extraindo métricas dos relatórios..."):
+                    metrics = llm_services.extract_key_metrics(retriever)
+                    
+                    if "error" in metrics:
+                        st.error(metrics["error"])
+                    else:
+                        st.markdown(metrics.get("metrics", "Nenhuma métrica encontrada"))
+                        
+                        # Botão para download
+                        if metrics.get("metrics"):
+                            st.download_button(
+                                label="📥 Baixar Métricas",
+                                data=metrics["metrics"],
+                                file_name="metricas_chave_fii.txt",
+                                mime="text/plain"
+                            )
+            
+            elif action == "detailed_insights":
+                st.subheader("🔍 Análise Detalhada dos Relatórios")
+                with st.spinner("Gerando insights detalhados... Isso pode levar alguns minutos."):
+                    insights = llm_services.generate_insights_from_documents(retriever)
+                    
+                    # Criar abas para diferentes insights
+                    insight_tabs = st.tabs([
+                        "🏢 FIIs Principais", 
+                        "💰 Rendimentos", 
+                        "🏗️ Setores", 
+                        "📈 Recomendações",
+                        "⚠️ Riscos & Oportunidades",
+                        "📊 Tendências"
+                    ])
+                    
+                    queries = list(insights.keys())
+                    
+                    for i, tab in enumerate(insight_tabs):
+                        with tab:
+                            if i < len(queries):
+                                query = queries[i]
+                                insight = insights[query]
+                                st.markdown(f"**Pergunta:** {query}")
+                                st.markdown("---")
+                                st.markdown(insight)
+                    
+                    # Botão para download de todos os insights
+                    all_insights_text = "\n\n".join([f"PERGUNTA: {q}\n\nRESPOSTA: {a}\n{'='*50}" for q, a in insights.items()])
+                    st.download_button(
+                        label="📥 Baixar Todos os Insights",
+                        data=all_insights_text,
+                        file_name="insights_completos_fii.txt",
+                        mime="text/plain"
+                    )
+            
+            # Limpar ação após processamento
+            st.session_state.insight_action = None
+        
+        # Seção de informações adicionais
+        with st.expander("ℹ️ Como funcionam os Insights"):
+            st.write("""
+            **Os insights são gerados automaticamente usando:**
+            
+            1. **RAG (Retrieval-Augmented Generation)**: Busca informações relevantes nos documentos
+            2. **IA Generativa**: Analisa e sintetiza as informações encontradas  
+            3. **Prompts Especializados**: Perguntas específicas para extrair insights valiosos
+            
+            **Tipos de Insights Disponíveis:**
+            - 📋 **Resumo Executivo**: Visão geral do mercado e recomendações
+            - 📊 **Métricas Chave**: Valores, rendimentos e dados numéricos
+            - 🔍 **Análise Detalhada**: Insights segmentados por categoria
+            
+            **Dica**: Quanto mais documentos processados, mais ricos serão os insights!
+            """)
 
 if __name__ == '__main__':
     main()
