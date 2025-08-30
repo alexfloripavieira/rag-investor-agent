@@ -239,28 +239,35 @@ flowchart TD
 
 ## Funcionalidades Principais
 
-### 1. Upload e Processamento de Documentos
+### 1. Seleção de Modelo LLM
+- **Dropdown interativo** na barra lateral para escolha do modelo
+- **6 modelos disponíveis**: GPT-4o-mini, GPT-4o, GPT-4-turbo, GPT-3.5-turbo, GPT-4, GPT-5
+- **Indicadores visuais** mostrando custo/qualidade de cada modelo
+- **Aplicação universal**: modelo selecionado usado em chat, insights e resumos
+- **Interface intuitiva** com descrições e recomendações de uso
+
+### 2. Upload e Processamento de Documentos
 - Upload de múltiplos PDFs simultaneamente
 - Detecção automática de duplicatas
 - Processamento com divisão inteligente em chunks
 - Geração de embeddings vetoriais
 - Armazenamento persistente no ChromaDB
 
-### 2. Interface de Conversação
+### 3. Interface de Conversação
 - Chat interativo com agente IA
 - Respostas baseadas no conteúdo dos documentos
 - Integração com busca web (DuckDuckGo)
 - Memória de conversação persistente
 - Processamento de linguagem natural
 
-### 3. Visualização de Documentos
+### 4. Visualização de Documentos
 - Visualizador de PDF integrado
 - Extração e exibição de texto formatado
 - Busca dentro do texto
 - Download de arquivos
 - Estatísticas de documento
 
-### 4. Geração de Insights Automáticos
+### 5. Geração de Insights Automáticos
 - **Resumo Executivo**: Análise geral do mercado
 - **Métricas Chave**: Extração de dados numéricos
 - **Análise Detalhada**: Insights categorizados por:
@@ -271,7 +278,7 @@ flowchart TD
   - Riscos e Oportunidades
   - Tendências de Mercado
 
-### 5. Funcionalidades de Áudio
+### 6. Funcionalidades de Áudio
 - Text-to-Speech (TTS) para resumos
 - Text-to-Speech para documentos completos
 - Concatenação automática de áudio
@@ -293,7 +300,13 @@ flowchart TD
 - **pydub**: Manipulação de áudio
 
 ### Inteligência Artificial
-- **OpenAI GPT-4o-mini**: Modelo de linguagem
+- **Modelos LLM Selecionáveis**: 
+  - GPT-4o-mini (padrão - rápido e econômico)
+  - GPT-4o (mais inteligente, mais caro)
+  - GPT-4-turbo (avançado)
+  - GPT-3.5-turbo (econômico)
+  - GPT-4 (clássico)
+  - GPT-5 (mais avançado e caro)
 - **OpenAI Embeddings**: text-embedding-3-small
 - **OpenAI TTS**: Síntese de voz (modelo tts-1)
 - **DuckDuckGo Search**: Busca web complementar
@@ -311,17 +324,28 @@ flowchart TD
    - Abra a aplicação em http://localhost:8501
    - Visualize a interface com 3 abas principais
 
-2. **Carregamento de Documentos**
+2. **Seleção do Modelo LLM**
+   - Na barra lateral, seção "🤖 Configuração do Modelo"
+   - Escolha entre 6 modelos disponíveis no dropdown:
+     - **GPT-4o-mini**: Rápido e econômico (recomendado para uso geral)
+     - **GPT-3.5-turbo**: Mais econômico para tarefas simples
+     - **GPT-4o**: Maior qualidade para análises complexas
+     - **GPT-4-turbo** e **GPT-4**: Modelos premium
+     - **GPT-5**: Mais avançado (maior custo)
+   - Observe os indicadores de custo/qualidade abaixo do seletor
+
+3. **Carregamento de Documentos**
    - Na barra lateral, use "Carregar Novos Relatórios"
    - Selecione um ou mais arquivos PDF
    - Aguarde confirmação do upload
 
-3. **Processamento**
+4. **Processamento**
    - Clique em "Integrar Novos Relatórios ao Agente"
    - Observe o status de cada arquivo (Novo/Já Processado)
    - Aguarde o processamento RAG completar
 
-4. **Uso das Funcionalidades**
+5. **Uso das Funcionalidades**
+   - **Modelo ativo**: Indicado no topo de cada aba (chat e insights)
 
    **Aba "Conversar com Agente":**
    - Digite perguntas sobre seus relatórios
@@ -338,7 +362,7 @@ flowchart TD
    - Use "Métricas Chave" para dados específicos
    - "Análise Detalhada" para insights categorizados
 
-5. **Recursos Avançados**
+6. **Recursos Avançados**
    - Download de insights como arquivos .txt
    - Geração e download de áudios TTS
    - Visualização de estatísticas do sistema
@@ -403,15 +427,20 @@ class VectorStoreManager:
 
 #### LLMServices
 - Encapsula interações com OpenAI
-- Implementa diferentes tipos de prompts
-- Gerencia geração de insights
+- **Suporte a múltiplos modelos LLM**: Todas as funções aceitam parâmetro `model_name` opcional
+- Implementa diferentes tipos de prompts especializados
+- Gerencia geração de insights com modelo selecionável
 - Controla síntese de voz
 
 ```python
-def generate_insights_from_documents(retriever):
+def generate_insights_from_documents(retriever, model_name=None):
+    # Usa modelo selecionado pelo usuário ou padrão
     # Múltiplas queries especializadas
     # Recuperação contextual
     # Geração de insights categorizados
+
+def setup_agent(retriever, model_name=None):
+    # Agente conversacional com modelo configurável
 ```
 
 #### FileHandler
@@ -429,12 +458,18 @@ def generate_insights_from_documents(retriever):
    - Processamento assíncrono de áudio
 
 2. **Qualidade**
+   - **Seleção de modelo otimizada**: 6 opções para diferentes necessidades
+   - **GPT-4o-mini padrão**: Equilibra qualidade e custo
+   - **Modelos premium disponíveis**: Para análises mais complexas
    - Prompts especializados por tipo de insight
    - Temperature ajustada por caso de uso
    - Validação de entrada e saída
    - Tratamento robusto de erros
 
 3. **Usabilidade**
+   - **Seletor de modelo intuitivo**: Dropdown com descrições e indicadores
+   - **Indicadores visuais**: Modelo ativo exibido em tempo real
+   - **Recomendações de uso**: Guias para escolha do modelo apropriado
    - Interface reativa com Streamlit
    - Progress bars para operações longas
    - Downloads diretos de conteúdo
