@@ -14,8 +14,15 @@ from langchain.memory import ConversationBufferMemory
 
 from config import LLM_MODEL_NAME, TTS_VOICE
 
-# Cliente OpenAI para TTS
-client = OpenAI()
+# Cliente OpenAI para TTS será inicializado quando necessário
+client = None
+
+def get_openai_client():
+    """Retorna cliente OpenAI inicializado."""
+    global client
+    if client is None:
+        client = OpenAI()
+    return client
 
 def get_summarizer_chain():
     """Cria e retorna uma cadeia para resumir textos."""
@@ -28,6 +35,7 @@ def get_summarizer_chain():
 def text_to_speech(text):
     """Converte texto para áudio usando a API da OpenAI."""
     try:
+        client = get_openai_client()
         response = client.audio.speech.create(
             model="tts-1",
             voice=TTS_VOICE,

@@ -169,7 +169,40 @@ def main():
                         file_handler.move_processed_file(report_path)
                     st.success("Banco de dados vetorial atualizado com sucesso!")
         
-        # st.info(f"Documentos no Vector Store: {vector_manager.count_documents()}")
+        # Mostrar informações do Vector Store
+        with st.expander("📊 Informações do Banco de Dados Vetorial (RAG)"):
+            try:
+                doc_count = vector_manager.count_documents()
+                collection_info = vector_manager.get_collection_info()
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("📄 Chunks totais", doc_count)
+                with col2:
+                    st.metric("🗂️ Coleção", collection_info.get('name', 'N/A'))
+                with col3:
+                    st.metric("🧠 Modelo Embeddings", config.EMBEDDING_MODEL_NAME)
+                
+                if doc_count > 0:
+                    st.success("✅ Vector Store funcionando corretamente!")
+                    
+                    # Teste de busca simples
+                    if st.button("🔍 Testar busca no RAG"):
+                        test_query = "investimento"
+                        results = vector_manager.search_similarity(test_query, k=2)
+                        if results:
+                            st.write(f"**Teste de busca por '{test_query}':**")
+                            for i, (doc, score) in enumerate(results):
+                                st.write(f"**Resultado {i+1}** (Score: {score:.3f})")
+                                st.write(f"Fonte: {doc.metadata.get('source_file', 'N/A')}")
+                                st.write(f"Conteúdo: {doc.page_content[:200]}...")
+                                st.write("---")
+                else:
+                    st.warning("⚠️ Nenhum documento foi processado ainda.")
+                    
+            except Exception as e:
+                st.error(f"❌ Erro ao acessar vector store: {e}")
+        
         st.divider()
 
         st.subheader("3. Explorar Relatório Específico")
